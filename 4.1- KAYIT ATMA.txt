@@ -1,0 +1,453 @@
+***************ANA EKRAN*********************
+
+*&---------------------------------------------------------------------*
+*& Report ZBE_P_007
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZBE_P_007.
+
+TABLES: ZBE_T_BMUSTERI, ZBE_T_BBAKIM, SSCRFIELDS.
+
+INCLUDE ZBE_P_007_TOP.
+INCLUDE ZBE_P_007_SS.
+INCLUDE ZBE_P_007_INITIAL.
+INCLUDE ZBE_P_007_ATSS.
+INCLUDE ZBE_P_007_FRM.
+
+
+START-OF-SELECTION.
+
+  PERFORM MUSKYT.
+  PERFORM GET_DATA.
+  PERFORM GET_COLOR.
+  PERFORM SET_FC.
+  PERFORM SET_LAYOUT.
+  PERFORM DISPLAY_ALV.
+
+**********************************TOP*********************************
+
+*&---------------------------------------------------------------------*
+*& Include          ZBE_P_007_TOP
+*&---------------------------------------------------------------------*
+DATA: GV_IBAN  TYPE ZBE_DE_BIBAN,
+      GV_SIFRE TYPE ZBE_DE_BSIFRE.
+
+TYPES: BEGIN OF GTY_BNK,
+         TCNO       TYPE ZBE_DE_BTC1,
+         AD         TYPE ZBE_DE_BAD,
+         SOYAD      TYPE ZBE_DE_BSOYAD,
+         DTARIH     TYPE ZBE_DE_DTARIH,
+         CINS       TYPE ZBE_DE_CINSIYET,
+         PUAN       TYPE ZBE_DE_PUAN,
+         MESLEK     TYPE ZBE_DE_BMESLEK,
+         MAAS       TYPE ZBE_DE_BMAAS,
+         IBAN       TYPE ZBE_DE_BIBAN,
+         TRY        TYPE ZBE_DE_TRYB,
+         USD        TYPE ZBE_DE_USDB,
+         EUR        TYPE ZBE_DE_EURB,
+         BORC       TYPE ZBE_DE_BORC,
+         LINE_COLOR TYPE CHAR4,
+       END OF GTY_BNK.
+
+DATA: GT_BNK TYPE TABLE OF GTY_BNK,
+      GS_BNK TYPE GTY_BNK.
+
+*DATA: GT_BNK1 TYPE TABLE OF GTY_BNK.
+
+DATA: GT_FIELDCATALOG TYPE SLIS_T_FIELDCAT_ALV,
+      GS_FIELDCATALOG TYPE SLIS_FIELDCAT_ALV.
+
+DATA: GS_LAYOUT TYPE SLIS_LAYOUT_ALV.
+
+DATA: GT_SORT TYPE SLIS_T_SORTINFO_ALV,
+      GS_SORT TYPE SLIS_SORTINFO_ALV.
+
+DATA: GT_EVENT TYPE SLIS_T_EVENT,
+      GS_EVENT TYPE SLIS_ALV_EVENT.
+
+**********************************SS************************
+*&---------------------------------------------------------------------*
+*& Include          ZBE_P_007_SS
+*&---------------------------------------------------------------------*
+SELECTION-SCREEN BEGIN OF BLOCK TAB1 WITH FRAME TITLE TEXT-001.
+
+PARAMETERS:
+  P_KYT RADIOBUTTON GROUP GR1 USER-COMMAND US1,
+  P_GOZ RADIOBUTTON GROUP GR1.
+
+SELECTION-SCREEN END OF BLOCK TAB1.
+
+
+SELECTION-SCREEN BEGIN OF BLOCK TAB2 WITH FRAME TITLE TEXT-002.
+
+PARAMETERS:
+  P_TCNO   TYPE    ZBE_DE_BTC          MODIF ID MUS,
+  P_AD     TYPE    ZBE_DE_BAD          MODIF ID MUS,
+  P_SOYAD  TYPE    ZBE_DE_BSOYAD       MODIF ID MUS,
+  P_CINS   TYPE    ZBE_DE_CINSIYET     MODIF ID MUS,
+  P_DTARIH TYPE    ZBE_DE_DTARIH       MODIF ID MUS,
+  P_MESLEK TYPE    ZBE_DE_BMESLEK      MODIF ID MUS,
+  P_MAAS   TYPE    ZBE_DE_BMAAS        MODIF ID MUS,
+  P_PUAN   TYPE    ZBE_DE_PUAN         MODIF ID MUS.
+
+SELECTION-SCREEN END OF BLOCK TAB2.
+
+SELECTION-SCREEN BEGIN OF BLOCK TAB3 WITH FRAME TITLE TEXT-003.
+
+PARAMETERS:
+  P_TCNO1  TYPE    ZBE_DE_BTC               MODIF ID GOZ.
+SELECT-OPTIONS:
+  P_DTARI1    FOR     ZBE_T_BMUSTERI-DTARIH    MODIF ID GOZ,
+  P_MAAS1     FOR     ZBE_T_BMUSTERI-MAAS      MODIF ID GOZ,
+  P_PUAN1     FOR     ZBE_T_BMUSTERI-PUAN      MODIF ID GOZ.
+
+SELECTION-SCREEN END OF BLOCK TAB3.
+
+SELECTION-SCREEN BEGIN OF BLOCK TAB4 WITH FRAME TITLE TEXT-004.
+
+SELECTION-SCREEN PUSHBUTTON 20(30) BUT1 USER-COMMAND BUTS.
+SELECTION-SCREEN PUSHBUTTON 65(30) BUT2 USER-COMMAND BUTU.
+
+SELECTION-SCREEN END OF BLOCK TAB4.
+
+*************************************INITIAL********************************
+
+*&---------------------------------------------------------------------*
+*& Include          ZBE_P_007_INITIAL
+*&---------------------------------------------------------------------*
+INITIALIZATION.
+
+  P_KYT = ABAP_TRUE.
+
+  BUT1 = '@10@''Tabloyu Görüntüle' .
+  BUT2 = '@0Z@''Tabloyu Değiştir' .
+
+************************************ATSS******************************************
+
+*&---------------------------------------------------------------------*
+*& Include          ZBE_P_007_ATSS
+*&---------------------------------------------------------------------*
+AT SELECTION-SCREEN OUTPUT.
+
+  LOOP AT SCREEN.
+
+    IF P_KYT = ABAP_FALSE.
+
+      CLEAR: P_TCNO, P_AD, P_SOYAD, P_CINS, P_DTARIH, P_MESLEK, P_MAAS, P_PUAN.
+
+    ELSEIF P_GOZ = ABAP_FALSE.
+
+      CLEAR: P_TCNO1,  P_DTARI1, P_MAAS1, P_PUAN1.
+
+    ENDIF.
+
+  ENDLOOP.
+
+  LOOP AT SCREEN.
+
+    CASE P_KYT.
+
+      WHEN ABAP_TRUE.
+
+        IF SCREEN-GROUP1 = 'MUS'.
+
+          SCREEN-ACTIVE = 1.
+          MODIFY SCREEN.
+
+        ENDIF.
+
+      WHEN ABAP_FALSE.
+
+        IF SCREEN-GROUP1 = 'MUS'.
+
+          SCREEN-ACTIVE = 0.
+          MODIFY SCREEN.
+
+        ENDIF.
+
+    ENDCASE.
+
+    CASE P_GOZ.
+
+      WHEN ABAP_TRUE.
+
+        IF SCREEN-GROUP1 = 'GOZ'.
+
+          SCREEN-ACTIVE = 1.
+          MODIFY SCREEN.
+
+        ENDIF.
+
+      WHEN ABAP_FALSE.
+
+        IF SCREEN-GROUP1 = 'GOZ'.
+
+          SCREEN-ACTIVE = 0.
+          MODIFY SCREEN.
+        ENDIF.
+
+    ENDCASE.
+
+  ENDLOOP.
+
+
+AT SELECTION-SCREEN.
+
+  CASE SSCRFIELDS.
+
+    WHEN 'BUTS'.
+
+      CALL FUNCTION 'VIEW_MAINTENANCE_CALL'
+        EXPORTING
+          ACTION    = 'S'
+          VIEW_NAME = 'ZBE_T_BBAKIM'.
+
+    WHEN 'BUTU'.
+
+      CALL FUNCTION 'VIEW_MAINTENANCE_CALL'
+        EXPORTING
+          ACTION    = 'U'
+          VIEW_NAME = 'ZBE_T_BBAKIM'.
+
+  ENDCASE.
+
+******************************FORM*****************************************
+
+*&---------------------------------------------------------------------*
+*& Include          ZBE_P_007_FRM
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form MUSKYT
+*&---------------------------------------------------------------------*
+FORM MUSKYT .
+
+  IF P_KYT = ABAP_TRUE.
+
+    IF P_AD IS INITIAL OR P_SOYAD IS INITIAL OR P_CINS IS INITIAL OR P_DTARIH IS INITIAL OR P_TCNO IS INITIAL OR P_PUAN IS INITIAL.
+
+      MESSAGE 'Müşterinin kayıt edilebilmesi için tüm TC No, Ad, Soyad, Cinsiyet, Doğum Tarihi, Kredi Puanı alanlarının doldurulması gerekmektedir.' TYPE 'W'. RETURN.
+
+    ELSEIF P_PUAN < 0 OR P_PUAN > 100 .
+
+      MESSAGE: 'Müşteri puanı 0 ile 100 arasında olmalıdır.' TYPE 'W'. RETURN.
+
+    ELSEIF P_TCNO < 1000000000.
+
+      MESSAGE: 'TC NO 10 haneden oluşmalıdır.' TYPE 'W'. RETURN.
+
+    ENDIF.
+
+  ENDIF.
+
+
+  CALL FUNCTION 'NUMBER_GET_NEXT'
+    EXPORTING
+      NR_RANGE_NR             = '01'
+      OBJECT                  = 'ZBE_NRO_BI'
+    IMPORTING
+      NUMBER                  = GV_IBAN
+    EXCEPTIONS
+      INTERVAL_NOT_FOUND      = 1
+      NUMBER_RANGE_NOT_INTERN = 2
+      OBJECT_NOT_FOUND        = 3
+      QUANTITY_IS_0           = 4
+      QUANTITY_IS_NOT_1       = 5
+      INTERVAL_OVERFLOW       = 6
+      BUFFER_OVERFLOW         = 7
+      OTHERS                  = 8.
+  IF SY-SUBRC <> 0.
+
+    MESSAGE 'Birşeyler ters gitti' TYPE 'W'.
+
+  ENDIF.
+
+
+  GV_SIFRE = '000000'.
+  ZBE_T_BMUSTERI-TCNO = P_TCNO.
+  ZBE_T_BMUSTERI-AD = P_AD.
+  ZBE_T_BMUSTERI-SOYAD = P_SOYAD.
+  ZBE_T_BMUSTERI-CINS = P_CINS.
+  ZBE_T_BMUSTERI-DTARIH = P_DTARIH.
+  ZBE_T_BMUSTERI-MESLEK = P_MESLEK.
+  ZBE_T_BMUSTERI-MAAS = P_MAAS.
+  ZBE_T_BMUSTERI-PUAN = P_PUAN.
+  ZBE_T_BMUSTERI-IBAN = GV_IBAN.
+  ZBE_T_BMUSTERI-SIFRE = GV_SIFRE.
+  ZBE_T_BBAKIM-TCNO = P_TCNO.
+  ZBE_T_BBAKIM-PUAN = P_PUAN.
+  ZBE_T_BMUSTERI-KTARIH = SY-DATUM.
+  MODIFY ZBE_T_BMUSTERI.
+  MODIFY ZBE_T_BBAKIM.
+
+  IF SY-SUBRC = 0.
+
+    MESSAGE 'Yeni müşteri kaydı başarıyla oluşturuldu.' TYPE 'S' .
+
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_DATA
+*&---------------------------------------------------------------------*
+FORM GET_DATA .
+
+
+
+  SELECT
+    ZBE_T_BMUSTERI~TCNO
+    ZBE_T_BMUSTERI~AD
+    ZBE_T_BMUSTERI~SOYAD
+    ZBE_T_BMUSTERI~CINS
+    ZBE_T_BMUSTERI~DTARIH
+    ZBE_T_BMUSTERI~MESLEK
+    ZBE_T_BMUSTERI~MAAS
+    ZBE_T_BMUSTERI~PUAN
+    ZBE_T_BMUSTERI~IBAN
+    ZBE_T_BMUSTERI~TRY
+    ZBE_T_BMUSTERI~USD
+    ZBE_T_BMUSTERI~EUR
+    ZBE_T_BMUSTERI~BORC
+    FROM ZBE_T_BMUSTERI
+    INTO CORRESPONDING FIELDS OF TABLE GT_BNK
+      WHERE ZBE_T_BMUSTERI~TCNO   EQ P_TCNO1
+      OR    ZBE_T_BMUSTERI~DTARIH IN P_DTARI1
+      OR    ZBE_T_BMUSTERI~MAAS   IN P_MAAS1
+      OR    ZBE_T_BMUSTERI~PUAN   IN P_PUAN1.
+
+ENDFORM.
+
+FORM GET_COLOR.
+  LOOP AT GT_BNK INTO GS_BNK.
+
+    IF GS_BNK-PUAN < 35 .
+
+      GS_BNK-LINE_COLOR = 'C610'.
+      MODIFY GT_BNK FROM GS_BNK.
+
+    ELSEIF GS_BNK-PUAN >= 35 AND GS_BNK-PUAN < 70 .
+
+      GS_BNK-LINE_COLOR = 'C310'.
+      MODIFY GT_BNK FROM GS_BNK.
+
+    ELSEIF GS_BNK-PUAN >= 70.
+
+      GS_BNK-LINE_COLOR = 'C510'.
+      MODIFY GT_BNK FROM GS_BNK.
+
+    ENDIF.
+
+  ENDLOOP.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_FC
+*&---------------------------------------------------------------------*
+FORM SET_FC .
+
+  CALL FUNCTION 'REUSE_ALV_FIELDCATALOG_MERGE'
+    EXPORTING
+      I_PROGRAM_NAME         = SY-REPID
+      I_STRUCTURE_NAME       = 'ZBE_S_005'
+      I_INCLNAME             = SY-REPID
+    CHANGING
+      CT_FIELDCAT            = GT_FIELDCATALOG
+    EXCEPTIONS
+      INCONSISTENT_INTERFACE = 1
+      PROGRAM_ERROR          = 2
+      OTHERS                 = 3.
+
+  IF SY-SUBRC <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_LAYOUT
+*&---------------------------------------------------------------------*
+FORM SET_LAYOUT .
+
+  GS_LAYOUT-WINDOW_TITLEBAR = 'Banka Müşteri Bilgiler'.
+  GS_LAYOUT-INFO_FIELDNAME = 'LINE_COLOR'.
+  GS_LAYOUT-COLWIDTH_OPTIMIZE = ABAP_TRUE.
+  GS_LAYOUT-EDIT = ABAP_FALSE.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_ALV
+*&---------------------------------------------------------------------*
+FORM DISPLAY_ALV .
+*  GS_SORT-SPOS      = 1.
+*  GS_SORT-TABNAME   = 'GT_BNK'.
+*  GS_SORT-FIELDNAME = 'KTARIH'.
+*  GS_SORT-UP     = ABAP_TRUE.
+*  APPEND GS_SORT TO GT_SORT.
+  IF P_GOZ = ABAP_TRUE.
+
+    CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+      EXPORTING
+        I_CALLBACK_PROGRAM       = SY-REPID
+        I_CALLBACK_PF_STATUS_SET = 'PF_STATUS_SET'
+        I_CALLBACK_USER_COMMAND  = 'USER_COMMAND'
+        IS_LAYOUT                = GS_LAYOUT
+        IT_FIELDCAT              = GT_FIELDCATALOG
+        IT_SORT                  = GT_SORT
+        I_SAVE                   = 'X'
+      TABLES
+        T_OUTTAB                 = GT_BNK
+      EXCEPTIONS
+        PROGRAM_ERROR            = 1
+        OTHERS                   = 2.
+    .
+    IF SY-SUBRC <> 0.
+* Implement suitable error handling here
+    ENDIF.
+
+  ENDIF.
+
+ENDFORM.
+
+FORM PF_STATUS_SET USING P_EXTAB TYPE SLIS_T_EXTAB.
+
+  SET PF-STATUS '0100'.
+
+ENDFORM.
+
+FORM USER_COMMAND USING P_UCOMM TYPE SY-UCOMM
+                        PS_SELFIELD TYPE SLIS_SELFIELD.
+  CASE P_UCOMM .
+
+    WHEN '&SAVE_DATA'.
+      DATA: ALV_GRID TYPE REF TO CL_GUI_ALV_GRID,
+            LS_BNK1  TYPE GTY_BNK.
+
+      CALL FUNCTION 'GET_GLOBALS_FROM_SLVC_FULLSCR'
+        IMPORTING
+          E_GRID = ALV_GRID.
+
+      CALL METHOD ALV_GRID->CHECK_CHANGED_DATA.
+
+      LOOP AT GT_BNK INTO LS_BNK1.
+
+        READ TABLE GT_BNK INTO LS_BNK1 WITH KEY PUAN = LS_BNK1-PUAN.
+
+
+          IF GS_BNK-PUAN <> LS_BNK1-PUAN .
+
+            UPDATE ZBE_T_BMUSTERI SET PUAN  = LS_BNK1-PUAN
+                                  WHERE TCNO = LS_BNK1-TCNO.
+          ENDIF.
+
+      ENDLOOP.
+
+      PERFORM GET_COLOR.
+      CALL METHOD ALV_GRID->REFRESH_TABLE_DISPLAY.
+
+  ENDCASE.
+
+
+
+ENDFORM.
+
+
+

@@ -1,0 +1,426 @@
+******************ANA SAYFA*************************
+
+*&---------------------------------------------------------------------*
+*& Report ZBE_P_008
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZBE_P_008.
+TABLES: ZBE_T_BMUSTERI.
+
+INCLUDE ZBE_P_008_DATA.
+INCLUDE ZBE_P_008_SCREEN.
+
+****************************DATA*******************
+
+*&---------------------------------------------------------------------*
+*& Include          ZBE_P_008_DATA
+*&---------------------------------------------------------------------*
+DATA: GV_TCNO    TYPE ZBE_DE_BTC1,
+      GV_SIFRE   TYPE ZBE_DE_BSIFRE,
+      GV_YENI    TYPE NUM6,
+      GV_YATIR   TYPE INT4,
+      GV_CEK     TYPE INT4,
+      GV_TRANS   TYPE NUMC10,
+      GV_TRY1    TYPE CHAR1,
+      GV_USD1    TYPE CHAR1,
+      GV_EUR1    TYPE CHAR1,
+      GV_MIKTAR  TYPE INT4,
+      GV_MIKTAR1 TYPE INT4,
+      GV_MIKTAR2 TYPE INT4,
+      GV_KREDI   TYPE INT4,
+      GV_KREDI1  TYPE INT4.
+
+DATA: GS_BMUSTERI TYPE ZBE_T_BMUSTERI,
+      GT_BMUSTERI TYPE TABLE OF ZBE_T_BMUSTERI.
+
+CONTROLS TB_ID TYPE TABSTRIP.
+
+**********************************SCREEN***************************
+
+*&---------------------------------------------------------------------*
+*& Include          ZBE_P_008_SCREEN
+*&---------------------------------------------------------------------*
+
+
+START-OF-SELECTION.
+
+
+
+  CALL SCREEN 0100.
+
+
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE STATUS_0100 OUTPUT.
+
+  SET PF-STATUS '0100'.
+  SET TITLEBAR '0100'.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE USER_COMMAND_0100 INPUT.
+
+  CASE SY-UCOMM.
+
+    WHEN '&BACK'.
+
+      SET SCREEN 0.
+
+    WHEN '&TAB1'.
+
+      TB_ID-ACTIVETAB = '&TAB1'.
+
+    WHEN '&TAB2'.
+
+      TB_ID-ACTIVETAB = '&TAB2'.
+
+    WHEN '&TAB3'.
+
+      TB_ID-ACTIVETAB = '&TAB3'.
+
+    WHEN '&TAB4'.
+
+      TB_ID-ACTIVETAB = '&TAB4'.
+
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0110  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE USER_COMMAND_0110 INPUT.
+
+  CASE SY-UCOMM.
+    WHEN '&CLEAR'.
+      CLEAR: GV_TCNO, GV_SIFRE.
+    WHEN '&LOGIN'.
+      SELECT SINGLE * FROM ZBE_T_BMUSTERI
+        INTO GS_BMUSTERI
+        WHERE TCNO  EQ GV_TCNO
+        AND   SIFRE EQ GV_SIFRE.
+
+      MESSAGE 'Giriş işlemi başarıyla gerçekleştirildi.' TYPE 'I' DISPLAY LIKE 'S'.
+
+      TB_ID-ACTIVETAB = '&TAB2'.
+    WHEN '&CP'.
+      GS_BMUSTERI-SIFRE = GV_YENI.
+
+      UPDATE ZBE_T_BMUSTERI SET SIFRE = GS_BMUSTERI-SIFRE
+      WHERE TCNO EQ GV_TCNO
+      AND   SIFRE EQ GV_SIFRE.
+
+      MESSAGE 'Şifre değiştirme işlemi başarıyla gerçekleştirildi.' TYPE 'I' DISPLAY LIKE 'S'.
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0120  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE USER_COMMAND_0120 INPUT.
+
+  CASE SY-UCOMM.
+
+    WHEN '&OK1'.
+
+      GS_BMUSTERI-TRY = GS_BMUSTERI-TRY + GV_YATIR.
+
+      UPDATE ZBE_T_BMUSTERI SET TRY = GS_BMUSTERI-TRY
+      WHERE TCNO  EQ GV_TCNO
+      AND   SIFRE EQ GV_SIFRE.
+
+      MESSAGE 'Para yatırma işlemi başarıyla gerçekleştirildi.' TYPE 'I' DISPLAY LIKE 'S'.
+
+    WHEN '&OK2'.
+
+      IF GS_BMUSTERI-TRY => GV_CEK.
+
+        GS_BMUSTERI-TRY = GS_BMUSTERI-TRY - GV_CEK.
+
+        UPDATE ZBE_T_BMUSTERI SET TRY = GS_BMUSTERI-TRY
+        WHERE TCNO  EQ GV_TCNO
+        AND   SIFRE EQ GV_SIFRE.
+
+        MESSAGE 'Para çekme işlemi başarıyla gerçekleştirildi.' TYPE 'I' DISPLAY LIKE 'S'.
+
+      ELSE.
+
+        MESSAGE 'Yetersiz bakiye!' TYPE 'I' DISPLAY LIKE 'E'.
+
+      ENDIF.
+
+    WHEN '&OK3'.
+
+      IF GS_BMUSTERI-TRY => GV_MIKTAR.
+
+        GS_BMUSTERI-TRY = GS_BMUSTERI-TRY - GV_MIKTAR.
+
+        UPDATE ZBE_T_BMUSTERI SET TRY = GS_BMUSTERI-TRY
+        WHERE TCNO  EQ GV_TCNO
+        AND   SIFRE EQ GV_SIFRE.
+
+        SELECT SINGLE * FROM ZBE_T_BMUSTERI
+        INTO GS_BMUSTERI
+        WHERE IBAN  EQ GV_TRANS.
+
+        GS_BMUSTERI-TRY = GS_BMUSTERI-TRY +  GV_MIKTAR * 97 / 100.
+
+        UPDATE ZBE_T_BMUSTERI SET TRY = GS_BMUSTERI-TRY
+        WHERE IBAN EQ GV_TRANS.
+
+        MESSAGE '%3 Komisyon alınarak transfer işlemi başarıyla gerçekleştirildi.' TYPE 'I' DISPLAY LIKE 'S'.
+
+        SELECT SINGLE * FROM ZBE_T_BMUSTERI
+        INTO GS_BMUSTERI
+        WHERE TCNO  EQ GV_TCNO
+        AND   SIFRE EQ GV_SIFRE.
+
+      ELSE.
+
+        MESSAGE 'Yetersiz bakiye!' TYPE 'I' DISPLAY LIKE 'E'.
+
+      ENDIF.
+
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0130  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE USER_COMMAND_0130 INPUT.
+
+  CASE SY-UCOMM.
+
+    WHEN '&OK4'.
+
+      IF GV_KREDI => 1000000.
+
+        IF GS_BMUSTERI-PUAN > 66.
+
+          GS_BMUSTERI-BORC = GS_BMUSTERI-BORC + GV_KREDI * 150 / 100.
+          GS_BMUSTERI-TRY  = GS_BMUSTERI-TRY  + GV_KREDI.
+
+          UPDATE ZBE_T_BMUSTERI SET TRY = GS_BMUSTERI-TRY
+          WHERE TCNO  EQ GV_TCNO
+          AND   SIFRE EQ GV_SIFRE.
+
+          UPDATE ZBE_T_BMUSTERI SET BORC = GS_BMUSTERI-BORC
+          WHERE TCNO  EQ GV_TCNO
+          AND   SIFRE EQ GV_SIFRE.
+
+          MESSAGE 'Yıllık %50 faiz oranıyla kredi başarıyla çekildi.' TYPE 'I' DISPLAY LIKE 'S'.
+
+        ELSE.
+
+          MESSAGE 'Kredi puanınız 67 veya daha düşük olduğu için 1000000 TRY kredi çekemezsiniz!' TYPE 'I' DISPLAY LIKE 'E'.
+        ENDIF.
+
+      ELSEIF GV_KREDI => 100000.
+
+        IF GS_BMUSTERI-PUAN > 33 AND GS_BMUSTERI-PUAN =< 66.
+
+          GS_BMUSTERI-BORC = GS_BMUSTERI-BORC + GV_KREDI * 150 / 100.
+          GS_BMUSTERI-TRY  = GS_BMUSTERI-TRY  + GV_KREDI.
+
+          UPDATE ZBE_T_BMUSTERI SET TRY = GS_BMUSTERI-TRY
+          WHERE TCNO  EQ GV_TCNO
+          AND   SIFRE EQ GV_SIFRE.
+
+          UPDATE ZBE_T_BMUSTERI SET BORC = GS_BMUSTERI-BORC
+          WHERE TCNO  EQ GV_TCNO
+          AND   SIFRE EQ GV_SIFRE.
+
+          MESSAGE 'Yıllık %50 faiz oranıyla kredi başarıyla çekildi.' TYPE 'I' DISPLAY LIKE 'S'.
+
+        ELSEIF GS_BMUSTERI-PUAN =< 33.
+
+          MESSAGE 'Kredi puanınız 33 veya daha düşük olduğu için 100000 TRY kredi çekemezsiniz!' TYPE 'I' DISPLAY LIKE 'E'.
+
+        ENDIF.
+
+      ELSE.
+
+        GS_BMUSTERI-BORC = GS_BMUSTERI-BORC + GV_KREDI * 150 / 100.
+        GS_BMUSTERI-TRY  = GS_BMUSTERI-TRY  + GV_KREDI.
+
+        UPDATE ZBE_T_BMUSTERI SET TRY = GS_BMUSTERI-TRY
+        WHERE TCNO  EQ GV_TCNO
+        AND   SIFRE EQ GV_SIFRE.
+
+        UPDATE ZBE_T_BMUSTERI SET BORC = GS_BMUSTERI-BORC
+        WHERE TCNO  EQ GV_TCNO
+        AND   SIFRE EQ GV_SIFRE.
+
+        MESSAGE 'Yıllık %50 faiz oranıyla kredi başarıyla çekildi.' TYPE 'I' DISPLAY LIKE 'S'.
+
+      ENDIF.
+
+
+    WHEN '&OK6'.
+
+      IF GS_BMUSTERI-TRY => GV_KREDI1.
+
+        GS_BMUSTERI-BORC = GS_BMUSTERI-BORC - GV_KREDI1.
+        GS_BMUSTERI-TRY  = GS_BMUSTERI-TRY  - GV_KREDI1.
+
+        UPDATE ZBE_T_BMUSTERI SET TRY = GS_BMUSTERI-TRY
+        WHERE TCNO  EQ GV_TCNO
+        AND   SIFRE EQ GV_SIFRE.
+
+        UPDATE ZBE_T_BMUSTERI SET BORC = GS_BMUSTERI-BORC
+        WHERE TCNO  EQ GV_TCNO
+        AND   SIFRE EQ GV_SIFRE.
+
+        MESSAGE 'Kredi ödemesi işlemi başarıyla gerçekleştirildi.' TYPE 'I' DISPLAY LIKE 'S'.
+
+      ELSE.
+
+        MESSAGE 'Yetersiz bakiye!' TYPE 'I' DISPLAY LIKE 'E'.
+
+      ENDIF.
+
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0140  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE USER_COMMAND_0140 INPUT.
+
+  CASE SY-UCOMM .
+
+    WHEN '&OK5'.
+
+      IF GV_USD1 = 'X'.
+
+        IF GS_BMUSTERI-TRY =>  GV_MIKTAR1.
+
+          GS_BMUSTERI-USD = GS_BMUSTERI-USD + GV_MIKTAR1 / 10.
+          GS_BMUSTERI-TRY = GS_BMUSTERI-TRY - GV_MIKTAR1.
+
+          UPDATE ZBE_T_BMUSTERI SET USD = GS_BMUSTERI-USD
+          WHERE TCNO  EQ GV_TCNO
+          AND   SIFRE EQ GV_SIFRE.
+
+          UPDATE ZBE_T_BMUSTERI SET TRY = GS_BMUSTERI-TRY
+          WHERE TCNO  EQ GV_TCNO
+          AND   SIFRE EQ GV_SIFRE.
+
+          MESSAGE 'Döviz Exchange İşlemi Gerçekleştirildi.' TYPE 'I' DISPLAY LIKE 'S'.
+
+        ELSE.
+
+          MESSAGE 'Yetersiz bakiye!' TYPE 'I' DISPLAY LIKE 'E'.
+
+        ENDIF.
+
+
+
+      ELSEIF GV_EUR1 = 'X'.
+
+        IF GS_BMUSTERI-TRY =>  GV_MIKTAR1.
+
+          GS_BMUSTERI-EUR = GS_BMUSTERI-EUR + GV_MIKTAR1 / 15.
+          GS_BMUSTERI-TRY = GS_BMUSTERI-TRY - GV_MIKTAR1.
+
+          UPDATE ZBE_T_BMUSTERI SET EUR = GS_BMUSTERI-EUR
+          WHERE TCNO  EQ GV_TCNO
+          AND   SIFRE EQ GV_SIFRE.
+
+          UPDATE ZBE_T_BMUSTERI SET TRY = GS_BMUSTERI-TRY
+          WHERE TCNO  EQ GV_TCNO
+          AND   SIFRE EQ GV_SIFRE.
+
+          MESSAGE 'Döviz Exchange İşlemi Gerçekleştirildi.' TYPE 'I' DISPLAY LIKE 'S'.
+
+        ELSE.
+
+          MESSAGE 'Yetersiz bakiye!' TYPE 'I' DISPLAY LIKE 'E'.
+
+        ENDIF.
+
+      ENDIF.
+
+    WHEN '&OK7'.
+
+      IF GV_USD1 = 'X'.
+
+        IF GS_BMUSTERI-USD => GV_MIKTAR2.
+
+          GS_BMUSTERI-USD = GS_BMUSTERI-USD - GV_MIKTAR2.
+          GS_BMUSTERI-TRY = GS_BMUSTERI-TRY + GV_MIKTAR2 * 10.
+
+          UPDATE ZBE_T_BMUSTERI SET USD = GS_BMUSTERI-USD
+          WHERE TCNO  EQ GV_TCNO
+          AND   SIFRE EQ GV_SIFRE.
+
+          UPDATE ZBE_T_BMUSTERI SET TRY = GS_BMUSTERI-TRY
+          WHERE TCNO  EQ GV_TCNO
+          AND   SIFRE EQ GV_SIFRE.
+
+          MESSAGE 'Döviz Exchange İşlemi Gerçekleştirildi.' TYPE 'I' DISPLAY LIKE 'S'.
+
+        ELSE.
+
+          MESSAGE 'Yetersiz bakiye!' TYPE 'I' DISPLAY LIKE 'E'.
+
+        ENDIF.
+
+      ELSEIF GV_EUR1 = 'X'.
+
+        IF GS_BMUSTERI-EUR => GV_MIKTAR2.
+
+          GS_BMUSTERI-EUR = GS_BMUSTERI-EUR - GV_MIKTAR2.
+          GS_BMUSTERI-TRY = GS_BMUSTERI-TRY + GV_MIKTAR2 * 15.
+
+          UPDATE ZBE_T_BMUSTERI SET EUR = GS_BMUSTERI-EUR
+          WHERE TCNO  EQ GV_TCNO
+          AND   SIFRE EQ GV_SIFRE.
+
+          UPDATE ZBE_T_BMUSTERI SET TRY = GS_BMUSTERI-TRY
+          WHERE TCNO  EQ GV_TCNO
+          AND   SIFRE EQ GV_SIFRE.
+
+          MESSAGE 'Döviz Exchange İşlemi Gerçekleştirildi.' TYPE 'I' DISPLAY LIKE 'S'.
+
+        ELSE.
+
+          MESSAGE 'Yetersiz bakiye!' TYPE 'I' DISPLAY LIKE 'E'.
+
+        ENDIF.
+
+      ENDIF.
+
+  ENDCASE.
+
+ENDMODULE.
+
+****************************SCREENS-0100************************
+
+PROCESS BEFORE OUTPUT.
+ MODULE STATUS_0100.
+   CALL SUBSCREEN SUB1 INCLUDING SY-REPID '0110'.
+   CALL SUBSCREEN SUB2 INCLUDING SY-REPID '0120'.
+   CALL SUBSCREEN SUB3 INCLUDING SY-REPID '0130'.
+   CALL SUBSCREEN SUB4 INCLUDING SY-REPID '0140'.
+
+PROCESS AFTER INPUT.
+ MODULE USER_COMMAND_0100.
+   CALL SUBSCREEN SUB1.
+   CALL SUBSCREEN SUB2.
+   CALL SUBSCREEN SUB3.
+   CALL SUBSCREEN SUB4.

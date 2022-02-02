@@ -1,0 +1,281 @@
+*************************ANA SAYFA**************************************
+
+REPORT ZBE_P_005.
+
+INCLUDE ZBE_P_005_TOP.
+INCLUDE ZBE_P_005_FRM.
+
+
+START-OF-SELECTION.
+
+  PERFORM GET_DATA.
+  PERFORM GET_COLOR.
+  PERFORM SET_FC.
+  PERFORM SET_LAYOUT.
+  PERFORM DISPLAY_ALV.
+
+*************************TOP************************
+
+
+TYPES: BEGIN OF GTY_KTP,
+         OGRNO      TYPE ZBE_DE_OGRNO,
+         OGRAD      TYPE ZBE_DE_OGRAD,
+         OGRSOYAD   TYPE ZBE_DE_OGRSOYAD,
+         ISLEMNO    TYPE ZBE_DE_ISLEMNO,
+         ATARIH     TYPE ZBE_DE_ATARIH,
+         VTARIH     TYPE ZBE_DE_VTARIH,
+         KITAPAD    TYPE ZBE_DE_KITAPAD,
+         YAZARAD    TYPE ZBE_DE_YAZARAD,
+         YAZARSOYAD TYPE ZBE_DE_YAZARSOYAD,
+         PUAN       TYPE ZBE_DE_PUAN,
+         LINE_COLOR TYPE CHAR4,
+         LIGHT      TYPE CHAR1,
+
+       END OF GTY_KTP.
+
+DATA: GT_KTP      TYPE TABLE OF GTY_KTP,
+      GT_KTP_TEMP TYPE TABLE OF GTY_KTP,
+      GS_KTP      TYPE GTY_KTP.
+DATA: GT_KTP1 TYPE TABLE OF GTY_KTP.
+
+DATA: GT_FIELDCATALOG TYPE SLIS_T_FIELDCAT_ALV,
+      GS_FIELDCATALOG TYPE SLIS_FIELDCAT_ALV.
+
+DATA: GS_LAYOUT TYPE SLIS_LAYOUT_ALV.
+
+DATA: GT_SORT TYPE SLIS_T_SORTINFO_ALV,
+      GS_SORT TYPE SLIS_SORTINFO_ALV.
+
+DATA: GT_EVENT TYPE SLIS_T_EVENT,
+      GS_EVENT TYPE SLIS_ALV_EVENT.
+
+DATA: GT_MESSAGE TYPE TABLE OF BAPIRET2,
+      GS_MESSAGE TYPE BAPIRET2.
+
+
+********************************************FORM**********************************
+
+*&---------------------------------------------------------------------*
+*& Include          ZBE_P_005_FRM
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Include          ZBE_P_005_FRM
+*&---------------------------------------------------------------------*
+
+FORM GET_DATA .
+  SELECT
+    ZBE_T_OGRENCI~OGRNO
+    ZBE_T_OGRENCI~OGRAD
+    ZBE_T_OGRENCI~OGRSOYAD
+    ZBE_T_ISLEM~ISLEMNO
+    ZBE_T_ISLEM~ATARIH
+    ZBE_T_ISLEM~VTARIH
+    ZBE_T_KITAP~KITAPAD
+    ZBE_T_YAZAR~YAZARAD
+    ZBE_T_YAZAR~YAZARSOYAD
+    ZBE_T_OGRENCI~PUAN
+    FROM ZBE_T_OGRENCI
+    INNER JOIN ZBE_T_ISLEM ON ZBE_T_ISLEM~OGRNO   EQ ZBE_T_OGRENCI~OGRNO
+    INNER JOIN ZBE_T_KITAP ON ZBE_T_KITAP~KITAPNO EQ ZBE_T_ISLEM~KITAPNO
+    INNER JOIN ZBE_T_YAZAR ON ZBE_T_YAZAR~YAZARNO EQ ZBE_T_KITAP~YAZARNO
+    INTO TABLE GT_KTP.
+
+  GT_KTP_TEMP[] = GT_KTP[].
+
+  SELECT
+  ZBE_T_OGRENCI~OGRNO
+  ZBE_T_OGRENCI~OGRAD
+  ZBE_T_OGRENCI~OGRSOYAD
+  ZBE_T_ISLEM~ISLEMNO
+  ZBE_T_ISLEM~ATARIH
+  ZBE_T_ISLEM~VTARIH
+  ZBE_T_KITAP~KITAPAD
+  ZBE_T_YAZAR~YAZARAD
+  ZBE_T_YAZAR~YAZARSOYAD
+  ZBE_T_OGRENCI~PUAN
+  FROM ZBE_T_OGRENCI
+  INNER JOIN ZBE_T_ISLEM ON ZBE_T_ISLEM~OGRNO   EQ ZBE_T_OGRENCI~OGRNO
+  INNER JOIN ZBE_T_KITAP ON ZBE_T_KITAP~KITAPNO EQ ZBE_T_ISLEM~KITAPNO
+  INNER JOIN ZBE_T_YAZAR ON ZBE_T_YAZAR~YAZARNO EQ ZBE_T_KITAP~YAZARNO
+  INTO TABLE GT_KTP1.
+ENDFORM.
+
+FORM GET_COLOR.
+  LOOP AT GT_KTP INTO GS_KTP.
+    DATA LV_GUN1 LIKE SY-DATUM.
+    DATA LV_GUN2 LIKE SY-DATUM.
+    LV_GUN1 = SY-DATUM - 3.
+    LV_GUN2 = SY-DATUM - 1.
+
+    IF GS_KTP-VTARIH = SY-DATUM .
+      GS_KTP-LINE_COLOR = 'C310'.
+      MODIFY GT_KTP FROM GS_KTP.
+    ELSEIF GS_KTP-VTARIH < SY-DATUM .
+      GS_KTP-LINE_COLOR = 'C610'.
+      MODIFY GT_KTP FROM GS_KTP.
+    ELSEIF GS_KTP-VTARIH > LV_GUN1.
+      GS_KTP-LINE_COLOR = 'C410'.
+      MODIFY GT_KTP FROM GS_KTP.
+    ELSEIF GS_KTP-VTARIH <= LV_GUN1 AND GS_KTP-VTARIH => LV_GUN2.
+      GS_KTP-LINE_COLOR = 'C510'.
+      MODIFY GT_KTP FROM GS_KTP.
+    ENDIF.
+  ENDLOOP.
+
+  LOOP AT GT_KTP INTO GS_KTP.
+    IF GS_KTP-PUAN => 70 .
+      GS_KTP-LIGHT = 3.
+      MODIFY GT_KTP FROM GS_KTP.
+    ELSEIF GS_KTP-PUAN > 70 AND GS_KTP-PUAN <= 50.
+      GS_KTP-LIGHT = 2.
+      MODIFY GT_KTP FROM GS_KTP.
+    ELSEIF GS_KTP-PUAN < 50.
+      GS_KTP-LIGHT = 1.
+      MODIFY GT_KTP FROM GS_KTP.
+    ENDIF.
+
+  ENDLOOP.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_FC
+*&---------------------------------------------------------------------*
+
+FORM SET_FC .
+  CALL FUNCTION 'REUSE_ALV_FIELDCATALOG_MERGE'
+    EXPORTING
+      I_PROGRAM_NAME         = SY-REPID
+      I_STRUCTURE_NAME       = 'ZBE_S_001'
+      I_INCLNAME             = SY-REPID
+    CHANGING
+      CT_FIELDCAT            = GT_FIELDCATALOG
+    EXCEPTIONS
+      INCONSISTENT_INTERFACE = 1
+      PROGRAM_ERROR          = 2
+      OTHERS                 = 3.
+
+  IF SY-SUBRC <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_LAYOUT
+*&---------------------------------------------------------------------*
+
+FORM SET_LAYOUT .
+  GS_LAYOUT-WINDOW_TITLEBAR = 'Kütüphane Otomasyon'.
+  GS_LAYOUT-INFO_FIELDNAME = 'LINE_COLOR'.
+  GS_LAYOUT-LIGHTS_FIELDNAME = 'light'.
+  GS_LAYOUT-COLWIDTH_OPTIMIZE = ABAP_TRUE.
+  GS_LAYOUT-EDIT = ABAP_TRUE.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_ALV
+*&---------------------------------------------------------------------*
+
+
+FORM DISPLAY_ALV .
+
+
+  GS_SORT-SPOS      = 1.
+  GS_SORT-TABNAME   = 'GT_KTP'.
+  GS_SORT-FIELDNAME = 'OGRNO'.
+  GS_SORT-UP     = ABAP_TRUE.
+  APPEND GS_SORT TO GT_SORT.
+
+
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      I_CALLBACK_PROGRAM       = SY-REPID
+      I_CALLBACK_PF_STATUS_SET = 'PF_STATUS_SET'
+      I_CALLBACK_USER_COMMAND  = 'USER_COMMAND'
+      IS_LAYOUT                = GS_LAYOUT
+      IT_FIELDCAT              = GT_FIELDCATALOG
+      IT_SORT                  = GT_SORT
+      I_SAVE                   = 'X'
+    TABLES
+      T_OUTTAB                 = GT_KTP
+    EXCEPTIONS
+      PROGRAM_ERROR            = 1
+      OTHERS                   = 2.
+  IF SY-SUBRC <> 0.
+* Implement suitable error handling here
+  ENDIF.
+ENDFORM.
+
+FORM PF_STATUS_SET USING P_EXTAB TYPE SLIS_T_EXTAB.
+  SET PF-STATUS '0100'.
+ENDFORM.
+
+
+*&---------------------------------------------------------------------*
+*& Form USER_COMMAND
+*&---------------------------------------------------------------------*
+FORM USER_COMMAND USING P_UCOMM TYPE SY-UCOMM
+                        PS_SELFIELD TYPE SLIS_SELFIELD.
+  DATA LS_KTP_TEMP LIKE LINE OF GT_KTP_TEMP.
+  CASE P_UCOMM.
+    WHEN '&SAVE_DATA'.
+
+      DATA LS_KTP   TYPE GTY_KTP.
+      DATA LV_MSG   TYPE STRING.
+      DATA ALV_GRID TYPE REF TO CL_GUI_ALV_GRID.
+
+      CALL FUNCTION 'GET_GLOBALS_FROM_SLVC_FULLSCR'
+        IMPORTING
+          E_GRID = ALV_GRID.
+
+      CALL METHOD ALV_GRID->CHECK_CHANGED_DATA.
+
+      LOOP AT GT_KTP INTO LS_KTP.
+
+        READ TABLE GT_KTP_TEMP INTO LS_KTP_TEMP WITH KEY ISLEMNO = LS_KTP-ISLEMNO.
+
+        IF SY-SUBRC EQ 0.
+          GS_MESSAGE-TYPE       = 'S'.
+          GS_MESSAGE-ID         = '00'.
+          GS_MESSAGE-NUMBER     = '001'.
+
+          IF LS_KTP_TEMP-VTARIH <> LS_KTP-VTARIH OR LS_KTP_TEMP-ATARIH <> LS_KTP-ATARIH.
+
+            LV_MSG = LS_KTP-ISLEMNO.
+            CONCATENATE LV_MSG '_işlem_nolu_' INTO GS_MESSAGE-MESSAGE_V1.
+            CONDENSE GS_MESSAGE-MESSAGE_V1.
+
+            IF LS_KTP-ATARIH <> LS_KTP_TEMP-ATARIH.
+              CONCATENATE 'alınma_tarihi_' LS_KTP-ATARIH INTO GS_MESSAGE-MESSAGE_V2.
+              CONDENSE GS_MESSAGE-MESSAGE_V2.
+            ENDIF.
+
+            IF LS_KTP-VTARIH <> LS_KTP_TEMP-VTARIH.
+              CONCATENATE 'teslim_edilme_tarihi_' LS_KTP-VTARIH INTO GS_MESSAGE-MESSAGE_V3.
+              CONDENSE GS_MESSAGE-MESSAGE_V3.
+            ENDIF.
+
+            GS_MESSAGE-MESSAGE_V4 = '_olarak_güncellendi_'.
+            CONDENSE GS_MESSAGE-MESSAGE_V4.
+
+            APPEND GS_MESSAGE TO GT_MESSAGE.
+          ENDIF.
+
+          IF  LS_KTP-VTARIH <> LS_KTP_TEMP-VTARIH OR LS_KTP-ATARIH <> LS_KTP_TEMP-ATARIH .
+            UPDATE ZBE_T_ISLEM SET    ATARIH  = LS_KTP-ATARIH
+                                      VTARIH  = LS_KTP-VTARIH
+                               WHERE  ISLEMNO = LS_KTP-ISLEMNO.
+
+          ENDIF.
+        ENDIF.
+      ENDLOOP.
+
+      PERFORM GET_COLOR.
+
+      CALL METHOD ALV_GRID->REFRESH_TABLE_DISPLAY.
+
+      CALL FUNCTION 'FINB_BAPIRET2_DISPLAY'
+        EXPORTING
+          IT_MESSAGE = GT_MESSAGE.
+
+
+  ENDCASE.
+
+ENDFORM.
